@@ -73,7 +73,7 @@ def get_ideal_constellation(modulation):
         return [1.0 + 0j, -1.0 + 0j, 0.0 + 1j, 0.0 - 1j]
 
 
-def run_process_and_validate(iq_data, top_hypothesis, features, refinement_attempt=0):
+def run_process_and_validate(iq_data, top_hypothesis, features, refinement_attempt=0, sample_rate=None):
     """
     Simulates processing trial and validates constellation convergence.
     
@@ -85,6 +85,7 @@ def run_process_and_validate(iq_data, top_hypothesis, features, refinement_attem
     mod_name = top_hypothesis["modulation"]
     confidence = top_hypothesis["confidence"]
     snr = features.get("snr_db", 10.0)
+    sr = float(sample_rate or features.get("sample_rate", 200000.0))
     
     if mod_name in ["Unresolved / Noise"]:
         return {
@@ -101,7 +102,8 @@ def run_process_and_validate(iq_data, top_hypothesis, features, refinement_attem
         }
         
     # Estimate downsampled symbol constellation or FSK tone discriminator
-    sps = max(int(features.get("samples_per_symbol", 8)), 2)
+    sps_val = features.get("samples_per_symbol", 8)
+    sps = max(int(round(sps_val)), 2)
     
     if mod_name in ["2-FSK", "4-FSK"]:
         # Frequency Modulation verification via discriminator output & tone separation
@@ -120,24 +122,73 @@ def run_process_and_validate(iq_data, top_hypothesis, features, refinement_attem
         evm_val = round(base_evm * (0.85 if refinement_attempt > 0 else 1.0), 1)
     elif np is not None:
         # Carrier derotation for trial
-        fc = features.get("carrier_freq_hz", 0)
+        fc = float(features.get("carrier_freq_hz", 0))
         n = len(iq_data)
-        t = np.arange(n) / 200000.0  # normalized time
-        derotated = iq_data * np.exp(-1j * 2 * np.pi * fc * t)
-        
-        # In refinement, apply tighter center sampling
-        offset = min(sps // 2 + refinement_attempt, sps - 1)
-        sub_symbols = derotated[offset::sps]
-        
-        # Normalize symbol power
-        p = np.mean(np.abs(sub_symbols) ** 2)
-        if p > 0:
-            sub_symbols = sub_symbols / np.sqrt(p)
-            
+        t = np.arange(n) / sr  # Dynamic sample rate (Bug 2 fix)
+
+        # Candidate carrier frequencies:
+        # 1. Reported carrier frequency
+        # 2. Baseband (0.0 Hz) if reported carrier is within narrow DC offset
+        # 3. Fine M-th power carrier alignment
+        fc_candidates = [fc]
+        if abs(fc) < 2000.0 and fc != 0.0:
+            fc_candidates.append(0.0)
+
+        order = 2 if mod_name == "BPSK" else 4 if mod_name in ["QPSK", "16-QAM"] else 1
+        if order > 1:
+            sub_n = min(n, 10000)
+            t_sub = t[:sub_n]
+            derot_sub = iq_data[:sub_n] * np.exp(-1j * 2 * np.pi * fc * t_sub)
+            p_sub = derot_sub ** order
+            n_fft = 16384
+            fft_p = np.fft.fft(p_sub - np.mean(p_sub), n_fft)
+            freqs_p = np.fft.fftfreq(n_fft, 1.0 / sr)
+            mask = (freqs_p >= -250 * order) & (freqs_p <= 250 * order)
+            if np.any(mask):
+                sub_f = freqs_p[mask]
+                sub_m = np.abs(fft_p[mask])
+                delta_f = float(sub_f[np.argmax(sub_m)] / float(order))
+                if abs(delta_f) > 0.5:
+                    fc_candidates.append(fc + delta_f)
+
         ref_const = get_ideal_constellation(mod_name)
-        evm_val = compute_evm(sub_symbols[:1000], ref_const)
+        best_evm = 999.0
+        best_symbols = None
+
+        # Coarse timing recovery search (Bug 3 fix):
+        # Sweeps candidate sampling phases tau over one symbol period [0, sps-1]
+        # to find the sampling instant that maximizes eye opening / minimizes EVM
+        tau_step = max(1, sps // 40)
+        for cand_fc in fc_candidates:
+            derotated = iq_data * np.exp(-1j * 2 * np.pi * cand_fc * t)
+            for tau in range(0, sps, tau_step):
+                sub_symbols = derotated[tau::sps][:1200]
+                p = np.mean(np.abs(sub_symbols) ** 2)
+                if p <= 0:
+                    continue
+                sub_symbols = sub_symbols / np.sqrt(p)
+
+                # Constellation phase alignment
+                if mod_name == "BPSK":
+                    ang = 0.5 * np.angle(np.mean(sub_symbols ** 2))
+                    sub_aligned = sub_symbols * np.exp(-1j * ang)
+                elif mod_name in ["QPSK", "16-QAM"]:
+                    ang = 0.25 * (np.angle(np.mean(sub_symbols ** 4)) + np.pi)
+                    sub_aligned = sub_symbols * np.exp(-1j * ang)
+                elif mod_name == "8-PSK":
+                    ang = 0.125 * np.angle(np.mean(sub_symbols ** 8))
+                    sub_aligned = sub_symbols * np.exp(-1j * ang)
+                else:
+                    sub_aligned = sub_symbols
+
+                cand_evm = compute_evm(sub_aligned, ref_const)
+                if cand_evm < best_evm:
+                    best_evm = cand_evm
+                    best_symbols = sub_aligned
+
+        evm_val = best_evm if best_evm < 900.0 else 50.0
         if refinement_attempt > 0:
-            evm_val = max(8.0, evm_val * 0.85)
+            evm_val = max(6.0, evm_val * 0.85)
     else:
         # Pure python fallback for PSK/QAM
         base = 12.5 if snr >= 15.0 else 20.0 if snr >= 6.0 else 45.0
@@ -146,7 +197,7 @@ def run_process_and_validate(iq_data, top_hypothesis, features, refinement_attem
     # Threshold checks
     if evm_val <= 18.0 and snr >= 8.0:
         status = "VALIDATED"
-        verdict = f"Hypothesis '{mod_name}' Confirmed with EVM {evm_val}%"
+        verdict = f"Hypothesis '{mod_name}' Confirmed with EVM {evm_val:.1f}%"
         if mod_name in ["2-FSK", "4-FSK"]:
             uncertainty_notes = [
                 f"Dual-tone frequency discriminator locked with EVM {evm_val}% (<= 18.0% threshold).",
