@@ -1,0 +1,84 @@
+{
+  "metadata": {
+    "application": "SpectraSense Workflow Orchestration & Evidence Layer",
+    "standard": "SIH 2026 Problem Statement ID 26147 (NTRO / Space Tech)",
+    "timestamp_utc": "2026-09-15T13:38:34.448717+00:00",
+    "profile_id": "SIG-PRF-1789479514",
+    "source_file": "qpsk_40k_16db.iq",
+    "file_size_bytes": 160000,
+    "file_format": "Raw Complex Float32 IQ"
+  },
+  "characterization": {
+    "carrier_frequency_hz": 39963.1,
+    "carrier_centroid_hz": 39963.1,
+    "bandwidth_3db_hz": 20000.0,
+    "occupied_bandwidth_99_hz": 30000.0,
+    "estimated_snr_db": 16.0,
+    "symbol_rate_baud": 10000.0,
+    "samples_per_symbol": 20.0,
+    "cumulant_c40": 0.03496131218301076,
+    "cumulant_c42": 0.9556589858668536,
+    "envelope_variance": 0.0123,
+    "inst_freq_variance": 412394899.3
+  },
+  "hypotheses_ranked": [
+    {
+      "rank": 1,
+      "modulation": "QPSK",
+      "confidence": 0.7935,
+      "confidence_pct": 79.4,
+      "evidence": [
+        "Near-zero C40 cumulant characteristic of 4-fold phase symmetry",
+        "Constant modulus envelope consistent with QPSK"
+      ],
+      "suggested_pipeline": "Costas Loop (4-Phase) -> Root-Raised-Cosine Matched Filter -> Gardner Sync -> 4-Quadrant Slicer"
+    },
+    {
+      "rank": 2,
+      "modulation": "8-PSK",
+      "confidence": 0.1217,
+      "confidence_pct": 12.2,
+      "evidence": [
+        "Circular constellation distribution with phase shifts"
+      ],
+      "suggested_pipeline": "M-th Power Carrier Sync (M=8) -> Polyphase Clock Sync -> 8-Phase Sector Decision"
+    },
+    {
+      "rank": 3,
+      "modulation": "2-FSK",
+      "confidence": 0.0349,
+      "confidence_pct": 3.5,
+      "evidence": [
+        "Standard spectral match"
+      ],
+      "suggested_pipeline": "Discriminator / Quadrature Demodulator -> Dual-Tone Bandpass Bank -> Zero-Crossing Detector"
+    },
+    {
+      "rank": 4,
+      "modulation": "BPSK",
+      "confidence": 0.01,
+      "confidence_pct": 1.0,
+      "evidence": [
+        "Standard spectral match"
+      ],
+      "suggested_pipeline": "Carrier Recovery (Squaring Loop / Costas 2-Phase) -> Gardner Symbol Sync -> Threshold Slicer"
+    }
+  ],
+  "processing_and_validation": {
+    "top_candidate": "QPSK",
+    "top_candidate_confidence_pct": 79.4,
+    "validation_status": "VALIDATED",
+    "validation_verdict": "Hypothesis 'QPSK' Confirmed with EVM 17.0%",
+    "evm_percent": 17.0,
+    "refinement_cycles_used": 1,
+    "processing_pipeline": "Costas Loop (4-Phase) -> Root-Raised-Cosine Matched Filter -> Gardner Sync -> 4-Quadrant Slicer",
+    "uncertainty_notes": [
+      "Parameters converge within standard MIL-STD / ETSI limits."
+    ]
+  },
+  "orchestration_summary": {
+    "evidence_chain_complete": true,
+    "verdict_is_conclusive": true,
+    "requires_human_sigint_review": false
+  }
+}

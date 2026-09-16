@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SpectraSense Profile - SIG-PRF-1789479514</title>
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #0d1117;
+        color: #e2e8f0;
+        margin: 0;
+        padding: 32px;
+        line-height: 1.5;
+    }
+    .container {
+        max-width: 960px;
+        margin: 0 auto;
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 32px;
+    }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 1px solid #30363d;
+        padding-bottom: 20px;
+        margin-bottom: 24px;
+    }
+    .title {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #f0f6fc;
+        margin: 0 0 4px 0;
+    }
+    .subtitle {
+        font-size: 13px;
+        color: #8b949e;
+        margin: 0;
+    }
+    .status-box {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: 1px solid #10b981;
+        color: #10b981;
+        background: rgba(0,0,0,0.3);
+    }
+    .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .card {
+        background-color: #0d1117;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        padding: 16px;
+    }
+    .card-title {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #8b949e;
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+    .param-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .param-table td {
+        padding: 6px 0;
+        border-bottom: 1px solid #21262d;
+    }
+    .param-label {
+        color: #8b949e;
+    }
+    .param-val {
+        text-align: right;
+        font-family: "SF Mono", "Consolas", monospace;
+        font-weight: 600;
+        color: #58a6ff;
+    }
+    table.data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin-top: 12px;
+    }
+    table.data-table th {
+        text-align: left;
+        padding: 10px;
+        background: #21262d;
+        color: #8b949e;
+        font-weight: 600;
+        border-bottom: 2px solid #30363d;
+    }
+    table.data-table td {
+        padding: 10px;
+        border-bottom: 1px solid #21262d;
+    }
+    .badge {
+        display: inline-block;
+        padding: 2px 6px;
+        font-size: 11px;
+        background: #21262d;
+        border: 1px solid #30363d;
+        border-radius: 4px;
+        margin-right: 4px;
+        margin-bottom: 4px;
+        color: #c9d1d9;
+    }
+    .uncertainty-box {
+        background: #1f1a14;
+        border: 1px solid #d97706;
+        border-radius: 6px;
+        padding: 16px;
+        margin-top: 24px;
+    }
+    .uncertainty-title {
+        color: #f59e0b;
+        font-weight: 700;
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+    ul {
+        margin: 0;
+        padding-left: 20px;
+        font-size: 13px;
+        color: #d1d5db;
+    }
+    .footer {
+        margin-top: 32px;
+        border-top: 1px solid #30363d;
+        padding-top: 16px;
+        font-size: 11px;
+        color: #6e7681;
+        display: flex;
+        justify-content: space-between;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div>
+            <h1 class="title">SPECTRASENSE STRUCTURED SIGNAL PROFILE</h1>
+            <p class="subtitle">NTRO / Space Tech (SIH 2026 PS 26147) &bull; Workflow Evidence Record</p>
+        </div>
+        <div class="status-box">VALIDATED</div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-title">Ingest Metadata</div>
+            <table class="param-table">
+                <tr><td class="param-label">Profile ID</td><td class="param-val">SIG-PRF-1789479514</td></tr>
+                <tr><td class="param-label">Source File</td><td class="param-val">qpsk_40k_16db.iq</td></tr>
+                <tr><td class="param-label">Format</td><td class="param-val">Raw Complex Float32 IQ</td></tr>
+                <tr><td class="param-label">Timestamp</td><td class="param-val">2026-09-15T13:38:34.448717+00:00</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Extracted Physical DSP Parameters</div>
+            <table class="param-table">
+                <tr><td class="param-label">Carrier Freq (Fc)</td><td class="param-val">39,963.1 Hz</td></tr>
+                <tr><td class="param-label">3 dB Bandwidth</td><td class="param-val">20,000.0 Hz</td></tr>
+                <tr><td class="param-label">Estimated SNR</td><td class="param-val">16.0 dB</td></tr>
+                <tr><td class="param-label">Symbol Rate (Rs)</td><td class="param-val">10,000.0 Baud</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Ranked Modulation Hypotheses (Stage 4)</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">Rank</th>
+                    <th style="width: 120px;">Candidate</th>
+                    <th style="width: 180px;">Confidence</th>
+                    <th>Physics-Informed Evidence Drivers</th>
+                    <th>Recommended Processing Chain</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+        <tr>
+            <td><strong>#1</strong></td>
+            <td><strong style="color: #00d2ff;">QPSK</strong></td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="flex: 1; height: 8px; background: #2d3748; border-radius: 4px; overflow: hidden;">
+                        <div style="width: 79.4%; height: 100%; background: #00d2ff;"></div>
+                    </div>
+                    <span>79.4%</span>
+                </div>
+            </td>
+            <td><span class='badge'>Near-zero C40 cumulant characteristic of 4-fold phase symmetry</span><span class='badge'>Constant modulus envelope consistent with QPSK</span></td>
+            <td style="font-size: 11px; color: #a0aec0;">Costas Loop (4-Phase) -> Root-Raised-Cosine Matched Filter -> Gardner Sync -> 4-Quadrant Slicer</td>
+        </tr>
+        
+        <tr>
+            <td><strong>#2</strong></td>
+            <td><strong style="color: #00d2ff;">8-PSK</strong></td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="flex: 1; height: 8px; background: #2d3748; border-radius: 4px; overflow: hidden;">
+                        <div style="width: 12.2%; height: 100%; background: #00d2ff;"></div>
+                    </div>
+                    <span>12.2%</span>
+                </div>
+            </td>
+            <td><span class='badge'>Circular constellation distribution with phase shifts</span></td>
+            <td style="font-size: 11px; color: #a0aec0;">M-th Power Carrier Sync (M=8) -> Polyphase Clock Sync -> 8-Phase Sector Decision</td>
+        </tr>
+        
+        <tr>
+            <td><strong>#3</strong></td>
+            <td><strong style="color: #00d2ff;">2-FSK</strong></td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="flex: 1; height: 8px; background: #2d3748; border-radius: 4px; overflow: hidden;">
+                        <div style="width: 3.5%; height: 100%; background: #00d2ff;"></div>
+                    </div>
+                    <span>3.5%</span>
+                </div>
+            </td>
+            <td><span class='badge'>Standard spectral match</span></td>
+            <td style="font-size: 11px; color: #a0aec0;">Discriminator / Quadrature Demodulator -> Dual-Tone Bandpass Bank -> Zero-Crossing Detector</td>
+        </tr>
+        
+        <tr>
+            <td><strong>#4</strong></td>
+            <td><strong style="color: #00d2ff;">BPSK</strong></td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="flex: 1; height: 8px; background: #2d3748; border-radius: 4px; overflow: hidden;">
+                        <div style="width: 1.0%; height: 100%; background: #00d2ff;"></div>
+                    </div>
+                    <span>1.0%</span>
+                </div>
+            </td>
+            <td><span class='badge'>Standard spectral match</span></td>
+            <td style="font-size: 11px; color: #a0aec0;">Carrier Recovery (Squaring Loop / Costas 2-Phase) -> Gardner Symbol Sync -> Threshold Slicer</td>
+        </tr>
+        
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Validation &amp; Verification Verdict (Stage 5)</div>
+        <table class="param-table">
+            <tr><td class="param-label">Top Candidate</td><td class="param-val">QPSK (79.4%)</td></tr>
+            <tr><td class="param-label">EVM Residual</td><td class="param-val">17.0%</td></tr>
+            <tr><td class="param-label">Refinement Loops</td><td class="param-val">1 cycles</td></tr>
+            <tr><td class="param-label">Validation Verdict</td><td class="param-val" style="color: #10b981;">Hypothesis 'QPSK' Confirmed with EVM 17.0%</td></tr>
+        </table>
+    </div>
+
+    <div class="uncertainty-box">
+        <div class="uncertainty-title">AUDIT TRAIL &amp; UNCERTAINTY NOTES (BOUNDED REFINEMENT EVIDENCE)</div>
+        <ul>
+            <li>Parameters converge within standard MIL-STD / ETSI limits.</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        <span>SpectraSense v1.0.0 &bull; Automated Evidence Layer</span>
+        <span>SIH 2026 &bull; Problem Statement 26147</span>
+    </div>
+</div>
+</body>
+</html>
+    

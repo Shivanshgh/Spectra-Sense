@@ -1,0 +1,6 @@
+{
+  "name": "SpectraSense",
+  "description": "Automated model for analysis of .IQ and .wav files along with signal parameter extraction. SIH 2026 Problem Statement 26147 (Space Technology, NTRO). Team Spectra.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
