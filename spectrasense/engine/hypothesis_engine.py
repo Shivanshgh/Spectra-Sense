@@ -40,7 +40,10 @@ def score_hypotheses(features, user_prior=None):
     ]
     """
     c40 = features.get("cumulant_c40", 0.0)
+    c40_real = features.get("cumulant_c40_real", 0.0)
+    c20 = features.get("cumulant_c20", 0.0)
     c42 = features.get("cumulant_c42", 0.0)
+    sq_ratio = features.get("sq_peak_ratio", 1.0)
     env_var = features.get("envelope_variance", 0.1)
     freq_var = features.get("freq_inst_variance", 1000.0)
     snr_db = features.get("snr_db", 10.0)
@@ -60,58 +63,63 @@ def score_hypotheses(features, user_prior=None):
         evidence_map["CW / Pure Carrier"].append("Negligible frequency deviation (<2000 Hz²)")
 
     # 2. Check for 16-QAM (Multi-amplitude)
-    # 16-QAM has multiple amplitude levels (3 distinct energy rings), giving env_var > 0.05
+    # 16-QAM has multiple amplitude levels (3 distinct energy rings), giving env_var > 0.055
     elif env_var >= 0.055:
-        scores["16-QAM"] += 7.5
-        scores["QPSK"] += 2.0
-        evidence_map["16-QAM"].append(f"Elevated envelope variance ({env_var:.3f}) indicating multi-level amplitude rings")
-        evidence_map["16-QAM"].append("Negative C42 cumulant consistent with square 16-QAM")
-
-    # 3. Check for BPSK (Binary Phase Shift Keying)
-    # BPSK has large non-zero C40 (> 0.45) when derotated
-    elif c40 > 0.45 and env_var < 0.055:
-        scores["BPSK"] += 8.0
+        scores["16-QAM"] += 8.5
         scores["QPSK"] += 1.5
-        evidence_map["BPSK"].append(f"Strong non-zero C40 cumulant ({c40:.2f})")
-        evidence_map["BPSK"].append("Bimodal phase distribution along single axis")
+        evidence_map["16-QAM"].append(f"Elevated envelope variance ({env_var:.3f}) indicating multi-level amplitude rings")
+        evidence_map["16-QAM"].append(f"Normalized C42 cumulant ({c42:.3f}) consistent with square 16-QAM grid")
 
-    # 4. Check for 2-FSK / 4-FSK vs QPSK / 8-PSK
-    elif env_var < 0.055:
-        # FSK exhibits constant envelope with discrete tone hopping:
-        # - Audio FSK (AFSK) band: 6,000 <= freq_var <= 4,000,000 Hz²
-        # - RF 2-FSK band: 20,000,000 <= freq_var <= 160,000,000 Hz²
-        # (PSK signals have transition phase spikes pushing freq_var > 200,000,000 Hz²)
-        is_fsk = (6000.0 <= freq_var <= 4000000.0) or (20000000.0 <= freq_var <= 160000000.0)
-        if is_fsk:
-            scores["2-FSK"] += 8.5
-            scores["4-FSK"] += 3.5
-            evidence_map["2-FSK"].append("Bimodal instantaneous frequency shifting with constant modulus")
-            evidence_map["2-FSK"].append(f"Frequency variance ({freq_var:.0f} Hz²) confirms discrete Mark/Space tone hopping")
-            evidence_map["2-FSK"].append("Low envelope fluctuation (<0.055) confirms constant-envelope frequency modulation")
+    # 3. Constant modulus modulations (PSK and FSK families)
+    else:
+        # Check BPSK:
+        # 1. Strong discrete line after squaring (peak-to-median ratio > 40)
+        # 2. Normalized C40 cumulant real part strongly negative (~ -1 to -2) and large magnitude
+        # 3. Normalized C20 cumulant near 1.0 (indicating 1D axis modulation)
+        is_bpsk = (sq_ratio >= 40.0 and (c40 >= 0.5 or c20 >= 0.4)) or (c40 >= 0.8 and c40_real < -0.4)
+        if is_bpsk:
+            scores["BPSK"] += 9.0
+            scores["QPSK"] += 1.0
+            evidence_map["BPSK"].append(f"Strong spectral line after squaring (peak ratio {sq_ratio:.1f}) confirms binary antipodal (BPSK) modulation")
+            evidence_map["BPSK"].append(f"Normalized C40 cumulant ({c40_real:.2f}) and C20 ({c20:.2f}) confirm 1D real constellation axis")
+            evidence_map["BPSK"].append("Bimodal 180° phase distribution along single axis with constant envelope")
         else:
-            # QPSK / 8-PSK: near-zero C40 (< 0.1), constant envelope, 4-fold phase symmetry
-            scores["QPSK"] += 7.0
-            scores["8-PSK"] += 4.0
-            scores["2-FSK"] += 1.5
-            evidence_map["QPSK"].append("Near-zero C40 cumulant characteristic of 4-fold phase symmetry")
-            evidence_map["QPSK"].append("Constant modulus envelope consistent with QPSK")
-            evidence_map["8-PSK"].append("Circular constellation distribution with phase shifts")
+            # Check 2-FSK / 4-FSK vs QPSK / 8-PSK
+            # FSK exhibits constant envelope with discrete tone hopping:
+            # - Audio FSK (AFSK) band: 6,000 <= freq_var <= 4,000,000 Hz²
+            # - RF 2-FSK band: 20,000,000 <= freq_var <= 160,000,000 Hz²
+            is_fsk = (6000.0 <= freq_var <= 4000000.0) or (20000000.0 <= freq_var <= 160000000.0)
+            if is_fsk:
+                scores["2-FSK"] += 8.5
+                scores["4-FSK"] += 3.5
+                evidence_map["2-FSK"].append("Bimodal instantaneous frequency shifting with constant modulus")
+                evidence_map["2-FSK"].append(f"Frequency variance ({freq_var:.0f} Hz²) confirms discrete Mark/Space tone hopping")
+                evidence_map["2-FSK"].append("Low envelope fluctuation (<0.055) confirms constant-envelope frequency modulation")
+            else:
+                # QPSK / 8-PSK: near-zero C40 (< 0.2), weak squaring line (< 30), constant envelope, 4-fold phase symmetry
+                scores["QPSK"] += 8.0
+                scores["8-PSK"] += 3.5
+                scores["2-FSK"] += 1.0
+                evidence_map["QPSK"].append(f"Near-zero normalized C40 cumulant ({c40:.3f}) characteristic of 4-quadrant QPSK symmetry")
+                evidence_map["QPSK"].append(f"Weak squaring line ratio ({sq_ratio:.1f}) rejects BPSK in favor of 4-phase constellation")
+                evidence_map["QPSK"].append("Constant modulus envelope with 4 constellation quadrants")
+                evidence_map["8-PSK"].append("Circular constellation distribution with phase shifts")
 
-    # 5. Low SNR / Degradation Penalty
+    # 4. Low SNR / Degradation Penalty
     if snr_db < 6.0:
         # Heavily boost Unresolved / Noise candidate when SNR is degraded
-        scores["Unresolved / Noise"] += 6.0
+        scores["Unresolved / Noise"] += 8.0
         evidence_map["Unresolved / Noise"].append(f"Low SNR ({snr_db:.1f} dB) limits modulation separability")
         evidence_map["Unresolved / Noise"].append("High noise floor induces constellation blurring")
         
         # Flatten probabilities of other candidates
         for k in scores:
             if k != "Unresolved / Noise":
-                scores[k] = scores[k] * 0.6 + 1.0
+                scores[k] = scores[k] * 0.45 + 1.0
 
     # Softmax conversion to normalized probabilities
     # Temperature scaling based on SNR: low SNR -> high temperature (flatter, honest uncertainty)
-    temp = max(1.0, 4.0 - 0.15 * snr_db)
+    temp = max(1.0, 5.0 - 0.2 * snr_db) if snr_db < 6.0 else max(1.0, 3.5 - 0.12 * snr_db)
     exp_scores = {mod: math.exp(scores[mod] / temp) for mod in MODULATION_CLASSES}
     total_exp = sum(exp_scores.values())
     
