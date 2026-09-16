@@ -32,6 +32,10 @@ export interface CharacterizeFeatures {
   cumulantC42: number;
   envelopeVariance: number;
   freqInstVariance: number;
+  cumulantC40Real?: number;
+  cumulantC20?: number;
+  sqPeakRatio?: number;
+  symbolRateQuality?: number;
 }
 
 export interface HypothesisCandidate {
