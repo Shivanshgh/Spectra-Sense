@@ -65,7 +65,7 @@ if __name__ == "__main__":
   'run.bat': `@echo off
 echo ====================================================================
 echo  SpectraSense - Signal Workflow Orchestration & Evidence Layer
-echo  Smart India Hackathon 2026 (Problem Statement 26147 - NTRO)
+echo  Automated Analysis of .IQ and .wav Files
 echo ====================================================================
 echo.
 
@@ -214,7 +214,7 @@ def run_process_and_validate(iq_data, top_hypothesis, features, refinement_attem
 `,
   'spectrasense/gui/main_window.py': `"""
 SpectraSense Main Desktop Window (PyQt6).
-Dark-themed tactical GUI designed for NTRO / Space Tech analysts.
+Dark-themed tactical GUI for signal intelligence and waveform analysis.
 """
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -226,7 +226,7 @@ from PyQt6.QtCore import Qt
 class SpectraSenseMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SpectraSense — Signal Workflow Orchestration (SIH 2026 PS 26147)")
+        self.setWindowTitle("SpectraSense — Signal Workflow Orchestration & Evidence Layer")
         self.resize(1360, 880)
         # Full implementation initializes 4-stage pipeline tabs and live RF canvas plots
 `
@@ -262,7 +262,7 @@ export const PythonPackageModal: React.FC<PythonPackageModalProps> = ({ isOpen, 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'SpectraSense_Windows_PyQt6_SIH2026.zip';
+      a.download = 'SpectraSense_Windows_PyQt6.zip';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -285,7 +285,7 @@ export const PythonPackageModal: React.FC<PythonPackageModalProps> = ({ isOpen, 
               Native Windows Desktop Application (PyQt6 Source)
             </span>
             <span className="bg-[#0284c7]/20 text-[#38bdf8] text-[10px] px-2 py-0.5 rounded border border-[#0284c7]/30 font-mono">
-              SIH 2026 &bull; PS 26147
+              PyQt6 Native Engine
             </span>
           </div>
 

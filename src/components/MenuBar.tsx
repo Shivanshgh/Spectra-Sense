@@ -193,13 +193,9 @@ export const MenuBar: React.FC<MenuBarProps> = ({
         </button>
         {openMenu === 'help' && (
           <div className="absolute top-7 left-0 w-80 bg-[#111722] border border-[#2a374a] rounded shadow-2xl p-3 z-50 text-[11px]">
-            <div className="font-semibold text-[#f1f5f9] mb-1">Smart India Hackathon 2026</div>
+            <div className="font-semibold text-[#f1f5f9] mb-1">SpectraSense Intelligence Platform</div>
             <div className="text-[#94a3b8] mb-1.5 leading-relaxed">
-              <strong>Team:</strong> Team Spectra &bull; <strong>Theme:</strong> Space Technology (NTRO)
-              <br />
-              <strong>Problem ID:</strong> 26147 (Software Category)
-              <br />
-              <strong className="text-[#cbd5e1]">Automated model for analysis of .IQ and .wav files along with signal parameter extraction</strong>
+              <strong className="text-[#cbd5e1]">Automated analysis of .IQ and .wav files along with signal parameter extraction</strong>
             </div>
             <div className="bg-[#1e293b] p-2 rounded text-[10px] text-[#cbd5e1] font-mono mb-2">
               CHARACTERIZE &rarr; HYPOTHESIZE &rarr; PROCESS &rarr; VALIDATE &rarr; BOUNDED REFINEMENT

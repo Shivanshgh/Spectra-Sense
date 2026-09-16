@@ -1,7 +1,7 @@
 """
 SpectraSense - Structured Signal Profile Generator
 Produces the official audit trail and intelligence report in JSON and HTML format.
-Compliant with NTRO / SIH 2026 Problem Statement 26147 standards.
+Standardized Automated Signal Parameter Extraction & Modulation Analysis.
 """
 
 import json
@@ -20,7 +20,7 @@ def build_signal_profile(file_meta, preprocess_meta, features, hypotheses, valid
     profile = {
         "metadata": {
             "application": "SpectraSense Workflow Orchestration & Evidence Layer",
-            "standard": "SIH 2026 Problem Statement ID 26147 (NTRO / Space Tech)",
+            "standard": "Automated Signal Parameter Extraction & Modulation Analysis",
             "timestamp_utc": timestamp,
             "profile_id": f"SIG-PRF-{int(datetime.datetime.now().timestamp())}",
             "source_file": file_meta.get("filename", "unknown"),
@@ -254,7 +254,7 @@ def generate_profile_html(profile):
     <div class="header">
         <div>
             <h1 class="title">SPECTRASENSE STRUCTURED SIGNAL PROFILE</h1>
-            <p class="subtitle">NTRO / Space Tech (SIH 2026 PS 26147) &bull; Workflow Evidence Record</p>
+            <p class="subtitle">Signal Workflow Orchestration &bull; Evidence Record</p>
         </div>
         <div class="status-box">{val['validation_status']}</div>
     </div>
@@ -318,7 +318,7 @@ def generate_profile_html(profile):
 
     <div class="footer">
         <span>SpectraSense v1.0.0 &bull; Automated Evidence Layer</span>
-        <span>SIH 2026 &bull; Problem Statement 26147</span>
+        <span>Signal Intelligence &amp; Waveform Analysis</span>
     </div>
 </div>
 </body>

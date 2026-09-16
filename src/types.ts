@@ -1,6 +1,6 @@
 /**
  * SpectraSense Type Definitions
- * SIH 2026 Problem Statement ID 26147 (NTRO / Space Technology)
+ * Automated Signal Workflow Orchestration & Evidence Layer
  */
 
 export interface FileMetadata {

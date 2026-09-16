@@ -749,7 +749,7 @@ export function buildProfile(
   return {
     metadata: {
       application: 'SpectraSense Workflow Orchestration & Evidence Layer',
-      standard: 'SIH 2026 Problem Statement ID 26147 (NTRO / Space Tech)',
+      standard: 'Automated Signal Parameter Extraction & Modulation Analysis',
       timestampUtc: timestamp,
       profileId: `SIG-PRF-${Date.now().toString().slice(-6)}`,
       sourceFile: meta.filename,

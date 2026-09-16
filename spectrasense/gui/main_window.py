@@ -1,6 +1,6 @@
 """
 SpectraSense - Main Application Window (PyQt6)
-Smart India Hackathon 2026 (Problem Statement 26147 - NTRO / Space Technology)
+Automated Analysis of .IQ and .wav Files along with Signal Parameter Extraction
 
 Features:
 - Windows desktop architecture with native menus, status bar, and dockable sidebars
@@ -41,7 +41,7 @@ except ImportError:
 class SpectraSenseMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SpectraSense — Signal Workflow Orchestration & Evidence Layer [SIH 2026 / NTRO PS 26147]")
+        self.setWindowTitle("SpectraSense — Signal Workflow Orchestration & Evidence Layer")
         self.resize(1340, 860)
         self.setStyleSheet(DARK_STYLESHEET)
 
@@ -98,7 +98,7 @@ class SpectraSenseMainWindow(QMainWindow):
 
         # Help Menu
         help_menu = menubar.addMenu("&Help")
-        about_action = QAction("&About SpectraSense (SIH 2026)", self)
+        about_action = QAction("&About SpectraSense", self)
         about_action.triggered.connect(self.on_about)
         help_menu.addAction(about_action)
 
@@ -138,7 +138,7 @@ class SpectraSenseMainWindow(QMainWindow):
         title_label = QLabel("SPECTRASENSE")
         title_label.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
         title_label.setStyleSheet("color: #38bdf8; letter-spacing: 1px;")
-        sub_label = QLabel("NTRO / Space Tech • SIH 2026 (PS 26147)")
+        sub_label = QLabel("Signal Workflow Orchestration & Evidence Layer")
         sub_label.setStyleSheet("color: #94a3b8; font-size: 11px;")
         layout.addWidget(title_label)
         layout.addWidget(sub_label)
@@ -626,7 +626,7 @@ class SpectraSenseMainWindow(QMainWindow):
             self,
             "About SpectraSense",
             "<h3>SpectraSense v1.0.0</h3>"
-            "<p><b>Smart India Hackathon 2026</b><br>Problem Statement ID: 26147 (NTRO / Space Technology)</p>"
+            "<p><b>Automated Analysis of .IQ and .wav Files</b><br>Signal Parameter Extraction &amp; Evidence Layer</p>"
             "<p>Workflow Orchestration + Evidence Layer for signal identification.<br>"
             "Pipeline: <b>CHARACTERIZE &rarr; HYPOTHESIZE &rarr; PROCESS &rarr; VALIDATE</b></p>"
             "<p>Architected for native Windows execution with PyQt6.</p>"

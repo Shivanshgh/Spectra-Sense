@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Synthetic Case Selector */}
         <label className="block text-[11px] text-[#94a3b8] mb-1 font-medium">
-          Select SIH Test Signal:
+          Select Benchmark Test Signal:
         </label>
         <select
           value={selectedPresetId}

@@ -1,7 +1,7 @@
 """
 SpectraSense - Signal Workflow Orchestration & Evidence Layer
-Smart India Hackathon 2026 (Problem Statement 26147 – NTRO / Space Technology)
+Automated Analysis of .IQ and .wav Files along with Signal Parameter Extraction
 """
 
 __version__ = "1.0.0"
-__author__ = "Team SpectraSense - SIH 2026"
+__author__ = "Team SpectraSense"

@@ -15,9 +15,9 @@ export const TitleBar: React.FC<TitleBarProps> = ({ onOpenPythonModal }) => {
         </div>
         <span className="font-semibold text-[#f1f5f9] tracking-wider text-xs">SPECTRASENSE</span>
         <span className="text-[#475569]">|</span>
-        <span className="text-[#94a3b8] font-mono text-[11px]">Team Spectra</span>
+        <span className="text-[#94a3b8] font-mono text-[11px]">Workflow Orchestration &amp; Evidence Layer</span>
         <span className="bg-[#1e293b] text-[#38bdf8] text-[10px] px-2 py-0.5 rounded border border-[#334155] font-mono">
-          SIH 2026 &bull; PS 26147 (NTRO / Space Tech)
+          IQ &amp; WAV Analysis Engine
         </span>
       </div>
 
