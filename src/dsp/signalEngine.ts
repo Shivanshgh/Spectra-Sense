@@ -499,10 +499,55 @@ export function extractFeatures(sig: ComplexSignal): CharacterizeFeatures {
   const c42 = m41 - m20MagSq - 2 * m21 * m21;
   const c42Abs = Math.abs(c42);
 
-  // M2M4 SNR
+  // Normalized cumulants (invariant to signal power)
+  const c21Sq = Math.max(m21 * m21, 1e-12);
+  const c40Norm = c40Abs / c21Sq;
+  const c40RealNorm = c40R / c21Sq;
+  const c20Norm = Math.sqrt(m20MagSq) / Math.max(m21, 1e-12);
+  const c42Norm = c42Abs / c21Sq;
+
+  // Squaring spectral line detector: computes x(t)^2 and finds max to median ratio
+  // BPSK produces a sharp 2*Fc peak; QPSK cancels due to 4-fold symmetry
+  let sqPeakRatio = 1.0;
+  {
+    const sqN = Math.min(n, 2048);
+    let nFft = 1;
+    while (nFft * 2 <= sqN && nFft < 2048) nFft *= 2;
+    if (nFft >= 512) {
+      const sqR = new Float32Array(nFft);
+      const sqI = new Float32Array(nFft);
+      let meanR = 0, meanI = 0;
+      for (let k = 0; k < nFft; k++) {
+        const r = sig.i[k] * sig.i[k] - sig.q[k] * sig.q[k];
+        const im = 2 * sig.i[k] * sig.q[k];
+        sqR[k] = r;
+        sqI[k] = im;
+        meanR += r;
+        meanI += im;
+      }
+      meanR /= nFft;
+      meanI /= nFft;
+      for (let k = 0; k < nFft; k++) {
+        sqR[k] -= meanR;
+        sqI[k] -= meanI;
+      }
+      fftRadix2(sqR, sqI);
+      const mags = new Float32Array(nFft);
+      for (let k = 0; k < nFft; k++) {
+        mags[k] = Math.sqrt(sqR[k] * sqR[k] + sqI[k] * sqI[k]);
+      }
+      const sortedMags = Array.from(mags).sort((a, b) => a - b);
+      const medianMag = sortedMags[Math.floor(sortedMags.length * 0.5)] + 1e-12;
+      const maxMag = sortedMags[sortedMags.length - 1];
+      sqPeakRatio = Math.round((maxMag / medianMag) * 10) / 10;
+    }
+  }
+
+  // M2M4 SNR with adaptive kurtosis
+  const ka = ampVar >= 0.055 ? 1.32 : 1.0;
   const m2 = m21;
   const m4 = m41;
-  const arg = 2 * m2 * m2 - m4;
+  const arg = (2 * m2 * m2 - m4) / (2 - ka);
   let snrDb = 10;
   if (arg > 0) {
     const s = Math.sqrt(arg);
@@ -512,8 +557,7 @@ export function extractFeatures(sig: ComplexSignal): CharacterizeFeatures {
     snrDb = 3.5;
   }
 
-  // Spectral noise floor SNR estimation (critical for audio and constant-envelope FSK)
-  // Only override if envelope is reasonably constant (ampVar < 0.055) so degraded / noise signals retain low SNR
+  // Spectral noise floor SNR estimation
   const sortedPsd = Array.from(psd).sort((a, b) => a - b);
   const floorIdx = Math.floor(sortedPsd.length * 0.15);
   const noiseFloor = sortedPsd[floorIdx] + 1e-12;
@@ -522,8 +566,67 @@ export function extractFeatures(sig: ComplexSignal): CharacterizeFeatures {
     snrDb = Math.min(spectralSnr, 32.0);
   }
 
-  // Symbol Rate Rs estimate (based on OBW and cyclostationary cues)
-  const rsEst = Math.round(bw3dB * 0.8);
+  // Symbol Rate Rs estimate via delay-and-multiply cyclostationary line detector
+  let rsEst = Math.round(bw3dB * 0.8);
+  let rsQuality = 0.5;
+  {
+    const dN = Math.min(n, 4096);
+    let nFft = 1;
+    while (nFft * 2 <= dN && nFft < 4096) nFft *= 2;
+    if (nFft >= 512) {
+      const dR = new Float32Array(nFft);
+      const dI = new Float32Array(nFft);
+      let dMeanR = 0, dMeanI = 0;
+      for (let k = 1; k < nFft; k++) {
+        const r = sig.i[k] * sig.i[k - 1] + sig.q[k] * sig.q[k - 1];
+        const im = sig.q[k] * sig.i[k - 1] - sig.i[k] * sig.q[k - 1];
+        dR[k] = r;
+        dI[k] = im;
+        dMeanR += r;
+        dMeanI += im;
+      }
+      dMeanR /= (nFft - 1);
+      dMeanI /= (nFft - 1);
+      for (let k = 1; k < nFft; k++) {
+        dR[k] -= dMeanR;
+        dI[k] -= dMeanI;
+      }
+      fftRadix2(dR, dI);
+      const maxSearchFreq = Math.min(sr * 0.48, Math.max(bw99 * 1.25, 5000));
+      const binW = sr / nFft;
+      const minBin = Math.max(1, Math.floor(500 / binW));
+      const maxBin = Math.min(nFft / 2, Math.floor(maxSearchFreq / binW));
+
+      let bestMag = -1;
+      let bestBin = 0;
+      for (let k = minBin; k < maxBin; k++) {
+        const m = Math.sqrt(dR[k] * dR[k] + dI[k] * dI[k]);
+        if (m > bestMag) {
+          bestMag = m;
+          bestBin = k;
+        }
+      }
+
+      if (bestBin > 0) {
+        let fCand = bestBin * binW;
+        for (const div of [2, 3, 4]) {
+          const subFreq = fCand / div;
+          if (subFreq >= 800) {
+            const subBin = Math.round(subFreq / binW);
+            const subMag = Math.sqrt(dR[subBin] * dR[subBin] + dI[subBin] * dI[subBin]);
+            if (subMag >= 0.35 * bestMag) {
+              fCand = subFreq;
+            }
+          }
+        }
+        if (fCand <= 1.25 * bw99) {
+          rsEst = Math.round(fCand);
+          rsQuality = 1.0;
+        }
+      }
+    }
+  }
+
   const sps = Math.max(Math.round(sr / Math.max(rsEst, 100)), 2);
 
   return {
@@ -534,16 +637,29 @@ export function extractFeatures(sig: ComplexSignal): CharacterizeFeatures {
     snrDb,
     symbolRateBaud: rsEst,
     samplesPerSymbol: sps,
-    cumulantC40: Math.round(c40Abs * 1000) / 1000,
-    cumulantC42: Math.round(c42Abs * 1000) / 1000,
+    cumulantC40: Math.round(c40Norm * 1000) / 1000,
+    cumulantC42: Math.round(c42Norm * 1000) / 1000,
     envelopeVariance: Math.round(ampVar * 10000) / 10000,
     freqInstVariance: Math.round(freqVar),
+    cumulantC40Real: Math.round(c40RealNorm * 1000) / 1000,
+    cumulantC20: Math.round(c20Norm * 1000) / 1000,
+    sqPeakRatio,
+    symbolRateQuality: rsQuality,
   };
 }
 
 // Stage 4: Multi-candidate ranked hypotheses
 export function rankHypotheses(feat: CharacterizeFeatures): HypothesisCandidate[] {
-  const { cumulantC40: c40, envelopeVariance: envVar, freqInstVariance: freqVar, snrDb, bandwidth3dBHz: bw } = feat;
+  const {
+    cumulantC40: c40,
+    cumulantC40Real: c40Real,
+    cumulantC20: c20,
+    sqPeakRatio = 1.0,
+    envelopeVariance: envVar,
+    freqInstVariance: freqVar,
+    snrDb,
+    bandwidth3dBHz: bw,
+  } = feat;
 
   const MODS = ['BPSK', 'QPSK', '8-PSK', '16-QAM', '2-FSK', '4-FSK', 'CW / Carrier', 'Unresolved / Noise'];
   const scores: Record<string, number> = {};
@@ -560,53 +676,59 @@ export function rankHypotheses(feat: CharacterizeFeatures): HypothesisCandidate[
     evidence['CW / Carrier'].push('Sub-500 Hz bandwidth with negligible frequency (<2000 Hz²) and amplitude variance');
     evidence['CW / Carrier'].push('Transmission matches unmodulated Continuous Wave (CW)');
   }
-
   // 2. 16-QAM check
   else if (envVar >= 0.055) {
-    scores['16-QAM'] += 8.0;
-    scores['QPSK'] += 2.0;
+    scores['16-QAM'] += 8.5;
+    scores['QPSK'] += 1.5;
     evidence['16-QAM'].push(`Elevated envelope variance (${envVar}) indicates multi-tier amplitude rings`);
     evidence['16-QAM'].push('Negative C42 cumulant consistent with square 16-QAM grid');
-  } else if (c40 > 0.45 && envVar < 0.055) {
-    // 3. BPSK check
-    scores['BPSK'] += 8.5;
-    scores['QPSK'] += 1.5;
-    evidence['BPSK'].push(`Strong non-zero C40 cumulant (${c40}) marks 2-fold phase symmetry`);
-    evidence['BPSK'].push('Bimodal phase distribution along single axis');
-  } else if (envVar < 0.055) {
-    // 4. 2-FSK vs QPSK vs 8-PSK
-    // Audio FSK (AFSK): 6,000 <= freqVar <= 4,000,000 Hz²
-    // RF 2-FSK: 20,000,000 <= freqVar <= 160,000,000 Hz²
-    // (PSK phase transitions induce spikes with freqVar > 200,000,000 Hz²)
-    const isFsk = (freqVar >= 6000 && freqVar <= 4000000) || (freqVar >= 20000000 && freqVar <= 160000000);
-    if (isFsk) {
-      scores['2-FSK'] += 8.5;
-      scores['4-FSK'] += 3.5;
-      evidence['2-FSK'].push('Bimodal instantaneous frequency shifting with constant modulus');
-      evidence['2-FSK'].push(`Frequency variance (${Math.round(freqVar).toLocaleString()} Hz²) confirms discrete Mark/Space tone hopping`);
-      evidence['2-FSK'].push('Low envelope fluctuation (<0.055) confirms constant-envelope frequency modulation');
-    } else {
-      scores['QPSK'] += 7.5;
-      scores['8-PSK'] += 4.0;
-      scores['2-FSK'] += 1.5;
-      evidence['QPSK'].push('Near-zero C40 cumulant (<0.1) characteristic of 4-fold phase symmetry');
-      evidence['QPSK'].push('Constant modulus envelope with 4 constellation quadrants');
-      evidence['8-PSK'].push('Circular constellation distribution with phase shifts');
+  } else {
+    // 3. Constant envelope: BPSK vs QPSK vs FSK
+    const isBpsk =
+      (sqPeakRatio >= 40.0 && (c40 >= 0.5 || (c20 !== undefined && c20 >= 0.4))) ||
+      (c40 >= 0.8 && c40Real !== undefined && c40Real < -0.4);
+
+    if (isBpsk && envVar < 0.055) {
+      scores['BPSK'] += 9.0;
+      scores['QPSK'] += 1.0;
+      evidence['BPSK'].push(`Strong squaring spectral line (peak ratio ${sqPeakRatio}) confirms 180° antipodal phase symmetry`);
+      evidence['BPSK'].push(`Normalized C40 cumulant (${c40}) and non-zero C20 (${c20?.toFixed(3) ?? 'N/A'}) confirm BPSK modulation`);
+    } else if (envVar < 0.055) {
+      // Check 2-FSK vs QPSK vs 8-PSK
+      const isFsk = (freqVar >= 6000 && freqVar <= 4000000) || (freqVar >= 20000000 && freqVar <= 160000000);
+      if (isFsk) {
+        scores['2-FSK'] += 8.5;
+        scores['4-FSK'] += 3.5;
+        evidence['2-FSK'].push('Bimodal instantaneous frequency shifting with constant modulus');
+        evidence['2-FSK'].push(`Frequency variance (${Math.round(freqVar).toLocaleString()} Hz²) confirms discrete Mark/Space tone hopping`);
+        evidence['2-FSK'].push('Low envelope fluctuation (<0.055) confirms constant-envelope frequency modulation');
+      } else {
+        scores['QPSK'] += 8.0;
+        scores['8-PSK'] += 4.0;
+        scores['BPSK'] += 1.2;
+        evidence['QPSK'].push(`Near-zero normalized C40 cumulant (${c40}) and suppressed squaring line (ratio ${sqPeakRatio}) confirm 4-fold rotational symmetry`);
+        evidence['QPSK'].push('Constant modulus envelope with 4 constellation quadrants');
+        evidence['8-PSK'].push('Circular constellation distribution with phase shifts');
+      }
     }
   }
 
   // 5. Degraded / Low SNR penalty
   if (snrDb < 6.0) {
-    scores['Unresolved / Noise'] += 7.5;
+    scores['Unresolved / Noise'] = 5.0;
+    scores['BPSK'] = 2.0;
+    scores['QPSK'] = 2.0;
+    scores['8-PSK'] = 1.8;
+    scores['16-QAM'] = 1.8;
+    scores['2-FSK'] = 2.0;
+    scores['4-FSK'] = 1.8;
+    scores['CW / Carrier'] = 1.5;
     evidence['Unresolved / Noise'].push(`Severely degraded SNR (${snrDb} dB) masks modulation constellation`);
     evidence['Unresolved / Noise'].push('Interference and noise floor prevent confident cluster separation');
-    MODS.forEach((m) => {
-      if (m !== 'Unresolved / Noise') scores[m] = scores[m] * 0.5 + 1.0;
-    });
   }
 
-  // Softmax
-  const temp = Math.max(1.2, 4.0 - 0.15 * snrDb);
+  // Softmax with temperature scaling
+  const temp = snrDb < 6.0 ? 3.0 : Math.max(1.2, 4.0 - 0.15 * snrDb);
   let sumExp = 0;
   const expScores: Record<string, number> = {};
   MODS.forEach((m) => {
@@ -645,10 +767,12 @@ export function rankHypotheses(feat: CharacterizeFeatures): HypothesisCandidate[
 export function validateHypothesis(
   top: HypothesisCandidate,
   features: CharacterizeFeatures,
-  refinementAttempt = 0
+  refinementAttempt = 0,
+  sig?: ComplexSignal
 ): ValidationVerdict {
   const mod = top.modulation;
   const snr = features.snrDb;
+  const sr = sig?.sampleRate ?? 200000;
 
   if (mod === 'Unresolved / Noise') {
     return {
@@ -679,6 +803,106 @@ export function validateHypothesis(
     } else {
       baseEvm = 35.0;
     }
+  } else if (sig && sig.i.length >= 500) {
+    // Exact timing recovery phase search over one symbol period
+    const sps = Math.max(features.samplesPerSymbol, 2);
+    const fc = features.carrierFreqHz;
+    const n = Math.min(sig.i.length, 8000);
+    const candFcs = [fc];
+    if (Math.abs(fc) < 2000 && fc !== 0) candFcs.push(0);
+
+    let bestEvm = 999.0;
+    const step = Math.max(1, Math.floor(sps / 40));
+
+    // Ref constellations
+    const refConst: [number, number][] =
+      mod === 'BPSK'
+        ? [[1, 0], [-1, 0]]
+        : mod === 'QPSK'
+        ? [
+            [1 / Math.SQRT2, 1 / Math.SQRT2],
+            [-1 / Math.SQRT2, 1 / Math.SQRT2],
+            [-1 / Math.SQRT2, -1 / Math.SQRT2],
+            [1 / Math.SQRT2, -1 / Math.SQRT2],
+          ]
+        : mod === '16-QAM'
+        ? [-3, -1, 1, 3].flatMap((r) =>
+            [-3, -1, 1, 3].map((im) => [r / Math.sqrt(10), im / Math.sqrt(10)] as [number, number])
+          )
+        : [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+    for (const candFc of candFcs) {
+      // Derotate
+      const derotI = new Float32Array(n);
+      const derotQ = new Float32Array(n);
+      for (let k = 0; k < n; k++) {
+        const t = k / sr;
+        const ang = -2 * Math.PI * candFc * t;
+        const cp = Math.cos(ang);
+        const sp = Math.sin(ang);
+        derotI[k] = sig.i[k] * cp - sig.q[k] * sp;
+        derotQ[k] = sig.i[k] * sp + sig.q[k] * cp;
+      }
+
+      for (let tau = 0; tau < sps; tau += step) {
+        let pSum = 0;
+        let count = 0;
+        for (let idx = tau; idx < n && count < 800; idx += sps) {
+          pSum += derotI[idx] * derotI[idx] + derotQ[idx] * derotQ[idx];
+          count++;
+        }
+        if (count < 50 || pSum <= 0) continue;
+        const norm = 1.0 / Math.sqrt(pSum / count);
+
+        // Phase alignment
+        let mean4I = 0, mean4Q = 0;
+        count = 0;
+        for (let idx = tau; idx < n && count < 800; idx += sps) {
+          const si = derotI[idx] * norm;
+          const sq = derotQ[idx] * norm;
+          if (mod === 'BPSK') {
+            mean4I += si * si - sq * sq;
+            mean4Q += 2 * si * sq;
+          } else {
+            const x2r = si * si - sq * sq;
+            const x2i = 2 * si * sq;
+            mean4I += x2r * x2r - x2i * x2i;
+            mean4Q += 2 * x2r * x2i;
+          }
+          count++;
+        }
+        mean4I /= count;
+        mean4Q /= count;
+        const alignAng =
+          mod === 'BPSK'
+            ? 0.5 * Math.atan2(mean4Q, mean4I)
+            : 0.25 * (Math.atan2(mean4Q, mean4I) + Math.PI);
+        const cAlign = Math.cos(-alignAng);
+        const sAlign = Math.sin(-alignAng);
+
+        let errSum = 0;
+        count = 0;
+        for (let idx = tau; idx < n && count < 800; idx += sps) {
+          const rawI = derotI[idx] * norm;
+          const rawQ = derotQ[idx] * norm;
+          const si = rawI * cAlign - rawQ * sAlign;
+          const sq = rawI * sAlign + rawQ * cAlign;
+
+          let minD = Infinity;
+          for (const [ri, rq] of refConst) {
+            const di = si - ri;
+            const dq = sq - rq;
+            const d = di * di + dq * dq;
+            if (d < minD) minD = d;
+          }
+          errSum += minD;
+          count++;
+        }
+        const evm = Math.sqrt(errSum / count) * 100;
+        if (evm < bestEvm) bestEvm = evm;
+      }
+    }
+    baseEvm = bestEvm < 900 ? bestEvm : snr > 15 ? 12.5 : snr > 10 ? 19.8 : 34.2;
   } else {
     baseEvm = snr > 15 ? 12.5 : snr > 10 ? 19.8 : 34.2;
   }
