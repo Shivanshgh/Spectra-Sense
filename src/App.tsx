@@ -110,7 +110,7 @@ export function App() {
 
       // Stage 5: Process & Validate
       setActiveStage('STAGE 5: PROCESS & VALIDATE');
-      const verd = validateHypothesis(hyps[0], feat, refinementAttempt);
+      const verd = validateHypothesis(hyps[0], feat, refinementAttempt, pre);
       setVerdict(verd);
 
       // Stage 6: Profile
