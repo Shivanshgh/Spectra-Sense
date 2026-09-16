@@ -1,6 +1,40 @@
 # SpectraSense — Signal Workflow Orchestration & Evidence Layer
 
-**Smart India Hackathon 2026 — Problem Statement ID 26147 (NTRO / Space Technology)**
+**Automated Analysis of .IQ and .wav Files along with Signal Parameter Extraction**
+
+---
+
+## 1. Deploying to Vercel
+
+SpectraSense is pre-configured for seamless 1-click deployment on **Vercel** with full client-side DSP, interactive RF spectrogram/constellation visualizers, and bundled benchmark signal sets.
+
+### Method A: Deploy via GitHub & Vercel Dashboard (Recommended)
+1. Push your SpectraSense repository to **GitHub** (or GitLab/Bitbucket).
+2. Go to [vercel.com/new](https://vercel.com/new) and log in.
+3. Import your `SpectraSense` repository.
+4. Vercel automatically detects the framework settings via `vercel.json`:
+   - **Framework Preset**: `Vite`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+5. Click **Deploy**. Your site will be live on a global edge CDN with HTTPS within ~30 seconds!
+
+### Method B: Deploy via Vercel CLI
+If you prefer deploying from your terminal:
+```bash
+# 1. Install Vercel CLI globally (if not already installed)
+npm install -g vercel
+
+# 2. Deploy preview build
+vercel
+
+# 3. Deploy to production
+vercel --prod
+```
+
+The configuration is handled by `vercel.json`:
+- SPA URL rewrites ensure direct link navigation works seamlessly.
+- High-performance asset caching and bundle compression.
+- Static `/samples/*.iq` and `/samples/*.wav` benchmark files are bundled into `dist/samples/` for instantaneous 1-click testing on the live deployment.
 
 ---
 

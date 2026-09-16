@@ -78,6 +78,14 @@ export function App() {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [activeStage, setActiveStage] = useState<string>('Ready');
   const [latencyMs, setLatencyMs] = useState<number>(14.2);
+  const [toast, setToast] = useState<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
+
+  const showToast = useCallback((message: string, type: 'info' | 'error' | 'success' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast((curr) => (curr?.message === message ? null : curr));
+    }, 4500);
+  }, []);
 
   // Pipeline Orchestration
   const executePipeline = useCallback(
@@ -122,11 +130,11 @@ export function App() {
   const handleRefineLoop = useCallback(() => {
     const currentAttempt = verdict.refinementCount;
     if (currentAttempt >= 2) {
-      alert('Maximum bounded refinement attempts (2) reached. Signal marked inconclusive.');
+      showToast('Maximum bounded refinement attempts (2) reached. Signal marked inconclusive.', 'info');
       return;
     }
     executePipeline(rawSignal, metadata, currentAttempt + 1);
-  }, [verdict.refinementCount, executePipeline, rawSignal, metadata]);
+  }, [verdict.refinementCount, executePipeline, rawSignal, metadata, showToast]);
 
   // Load Preset
   const handleSelectPreset = (id: string) => {
@@ -164,7 +172,7 @@ export function App() {
       executePipeline(sig, meta, 0);
     } catch (err) {
       console.error('File parsing error:', err);
-      alert('Error parsing uploaded signal file. Ensure valid .iq float32 or .wav file.');
+      showToast('Error parsing uploaded signal file. Ensure valid .iq float32 or .wav file.', 'error');
     }
   };
 
@@ -381,6 +389,29 @@ export function App() {
         isOpen={isPythonModalOpen}
         onClose={() => setIsPythonModalOpen(false)}
       />
+
+      {/* 6. Floating Notification Toast */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`fixed bottom-8 right-6 z-50 px-4 py-2.5 rounded-md border text-xs shadow-2xl flex items-center gap-2 transition-all ${
+            toast.type === 'error'
+              ? 'bg-[#450a0a] border-[#b91c1c] text-[#fca5a5]'
+              : toast.type === 'success'
+              ? 'bg-[#064e3b] border-[#059669] text-[#6ee7b7]'
+              : 'bg-[#1e293b] border-[#38bdf8] text-[#e0f2fe]'
+          }`}
+        >
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="ml-2 text-[#94a3b8] hover:text-[#f8fafc] font-bold"
+          >
+            &times;
+          </button>
+        </div>
+      )}
     </div>
   );
 }

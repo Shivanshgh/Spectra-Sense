@@ -97,6 +97,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
           />
         </div>
 
+        {/* Load bundled real files from Vercel static public/samples */}
+        <div className="mt-2">
+          <label className="block text-[10px] text-[#64748b] mb-1">
+            Or test bundled .IQ / .wav file:
+          </label>
+          <select
+            defaultValue=""
+            onChange={async (e) => {
+              const val = e.target.value;
+              if (!val) return;
+              try {
+                const res = await fetch(`/samples/${val}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const file = new File([blob], val, { type: val.endsWith('.wav') ? 'audio/wav' : 'application/octet-stream' });
+                onFileUpload(file);
+              } catch (err) {
+                console.error('Failed to load sample:', err);
+              }
+              e.target.value = '';
+            }}
+            className="w-full bg-[#172030] border border-[#2d3b50] rounded px-2 py-1 text-[11px] text-[#cbd5e1] focus:border-[#38bdf8] focus:outline-none"
+          >
+            <option value="">Load bundled real file...</option>
+            <option value="bpsk_25k_18db.iq">bpsk_25k_18db.iq (RF BPSK, 18 dB)</option>
+            <option value="qpsk_40k_16db.iq">qpsk_40k_16db.iq (RF QPSK, 16 dB)</option>
+            <option value="2fsk_30k_15db.iq">2fsk_30k_15db.iq (RF 2-FSK, 15 dB)</option>
+            <option value="16qam_bb_22db.iq">16qam_bb_22db.iq (Baseband 16-QAM)</option>
+            <option value="ambiguous_degraded_case.iq">ambiguous_degraded_case.iq (Low SNR / Spurs)</option>
+            <option value="audio_fsk_sample.wav">audio_fsk_sample.wav (Audio WAV)</option>
+          </select>
+        </div>
+
         {/* Ingest Stats Card */}
         <div className="mt-3 bg-[#151c2a] rounded p-2.5 border border-[#202c3e] text-[11px] font-mono space-y-1">
           <div className="flex justify-between text-[#94a3b8]">
