@@ -84,7 +84,8 @@ class SpectraSensePipeline:
             sig,
             top_h,
             self.features,
-            refinement_attempt=refinement_attempt
+            refinement_attempt=refinement_attempt,
+            sample_rate=self.sample_rate
         )
         return self.validation_result
 
